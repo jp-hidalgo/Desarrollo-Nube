@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tasks</title>
+</head>
+<body>
+    <h1>Welcome, {{ username }}</h1>
+    <h2>Your Tasks:</h2>
+    <ul>
+        {% for task in tasks %}
+            <li>{{ task }}</li>
+        {% endfor %}
+    </ul>
+    <form method="POST">
+        <label for="new_task">Add a new task:</label>
+        <input type="text" name="new_task" required>
+        <button type="submit">Create Task</button>
+    </form>
+    <a href="/logout">Logout</a>
+</body>
+</html>
