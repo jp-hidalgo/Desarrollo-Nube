@@ -18,7 +18,7 @@ user_tasks = {
 def home():
     if 'username' in session:
         return f'Hello, {session["username"]}! <a href="/logout">Logout</a>'
-    return 'You are not logged in. <a href="/login">Login</a>'
+    return 'You are not logged in. <a href="/api/auth/login">Login</a>'
 
 @app.route('/api/auth/signup', methods=['GET', 'POST'])
 def register():
@@ -28,7 +28,7 @@ def register():
         if username in users:
             return 'Username already exists. Please choose a different username.'
         users[username] = password
-        return 'Registration successful. <a href="/login">Login</a>'
+        return 'Registration successful. <a href="/api/auth/login">Login</a>'
     return render_template('register.html')
 
 @app.route('/api/auth/login', methods=['GET', 'POST'])
@@ -58,9 +58,9 @@ def tasks():
             if new_task:
                 user_task_list.append(new_task)
                 user_tasks[username] = user_task_list
-
+            
         return render_template('tasks.html', username=username, tasks=user_task_list)
-    return 'You are not logged in. <a href="/login">Login</a> or <a href="/register">Register</a>'
+    return 'You are not logged in. <a href="/api/auth/login">Login</a> or <a href="/api/auth/register">Register</a>'
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')

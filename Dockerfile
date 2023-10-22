@@ -11,7 +11,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # Copy the current directory contents into the container at /app
-COPY . /app
+COPY  flaskr /app
 
 # Expose the port that the app will run on (replace with the port your Flask app uses)
 EXPOSE 5000
