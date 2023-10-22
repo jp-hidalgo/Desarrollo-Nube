@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Tasks</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 </head>
 <body>
     <h1>Welcome, {{ username }}</h1>
@@ -16,6 +18,33 @@
         <input type="text" name="new_task" required>
         <button type="submit">Create Task</button>
     </form>
+    <br/>
+    <form method="POST" onsubmit="return deleteTask()">
+        <label for="new_task">Add a new task:</label>
+        <input type="number" name="id_task" required>
+        <button type="submit" > eliminar </button>
+    </form>
     <a href="/logout">Logout</a>
+
+
+    <script>
+        function deleteTask() {
+            var id_task = document.querySelector('input[name="id_task"]').value;
+            // Realizamos una solicitud DELETE utilizando AJAX
+            $.ajax({
+                url: '/tasks/'+ id_task, // Aquí proporciona la URL del servidor para eliminar la tarea con ID 1.
+                type: 'DELETE',
+                success: function(data) {
+                    // Manejamos la respuesta exitosa del servidor
+                    alert('Tarea eliminada correctamente');
+                    // Puedes realizar otras acciones aquí, como actualizar la interfaz de usuario.
+                },
+                error: function(error) {
+                    // Manejamos cualquier error que pueda ocurrir
+                    alert('Error al eliminar la tarea: ' + error.responseText);
+                }
+            });
+        }
+    </script>
 </body>
 </html>

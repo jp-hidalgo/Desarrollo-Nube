@@ -50,7 +50,7 @@ def create_user():
 @app.route('/')
 def home():
     if 'username' in session:
-        return f'Hello, {session["username"]}! <br/> You token is {session["token"]} <br/> <a href="/logout">Logout</a>'
+        return f'Hello, {session["username"]}! <br/> You token is {session["token"]} <br/>  <a href="/tasks">Tasks</a> <br/>  <a href="/logout">Logout</a>'
     return 'You are not logged in. <a href="/api/auth/login">Login</a>'
 
 @app.route('/api/auth/signup', methods=['GET', 'POST'])
@@ -83,13 +83,15 @@ def login():
     return render_template('login.html')
 
 @app.route('/logout')
-@jwt_required()
 def logout():
     session.pop('username', None)
     return redirect(url_for('home'))
 
-@app.route('/tasks', methods=['GET', 'POST'])
+
+
+
 @jwt_required()
+@app.route('/tasks', methods=['GET', 'POST'])
 def tasks():
     if 'username' in session:
         username = session['username']
@@ -104,10 +106,41 @@ def tasks():
         return render_template('tasks.html', username=username, tasks=user_task_list)
     return 'You are not logged in. <a href="/api/auth/login">Login</a> or <a href="/api/auth/register">Register</a>'
 
+
+
+
+
+@jwt_required()
+@app.route('/tasks/<int:id_task>', methods=['GET','POST'])
+def get_task_by_id(id_task):
+    id_task=id_task-1
+    print("** llegue -> ", request.method )
+    if 'username' in session:
+        username = session['username']
+        user_task_list = user_tasks.get(username, [])
+        
+        if id_task < 0 or id_task >= len(user_task_list):
+            return 'Tarea no encontrada', 404  # Retorna un código 404 si el ID no existe
+        else:
+            task = user_task_list[id_task]
+            return f'Tarea ID {id_task}: {task} <br/> volver a <a href="/tasks">tasks</a> '
+    
+    return 'You are not logged in. <a href="/api/auth/login">Login</a> or <a href="/api/auth/register">Register</a>'
+
+
+@jwt_required()
+@app.route('/tasks/<int:id_task>', methods=['GET','DELETE'])
+def delete_task_by_id(id_task):
+    id_task=id_task-1
+    print("** llegue -> ", request.method )
+    
+    return f'eliminado {id_task}'
+
+
+
+
+
 if __name__ == '__main__':
     db.create_all()
     app.run(host='0.0.0.0')
 
-    creo que lo que no esta funionando es la creacion con este bloque: if __name__ == '__main__':
-        db.create_all()
-        app.run(host='0.0.0.0') la linea que creo que no funciona es esta: db.create_all()
