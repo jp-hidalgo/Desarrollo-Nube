@@ -92,7 +92,6 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('home'))
 
-@jwt_required()
 @app.route('/tasks', methods=['GET', 'POST'])
 def tasks():
     if 'username' in session:
@@ -105,12 +104,80 @@ def tasks():
                 user_task_list.append(new_task)
                 user_tasks[username] = user_task_list
 
+            # Verificar si se envió un archivo en la solicitud
+            if 'file' in request.files:
+                file = request.files['file']
+
+                # Verificar si el archivo tiene un nombre válido
+                if file.filename != '':
+                    # Obtener el formato de destino seleccionado por el usuario
+                    conversion_format = request.form.get('conversion_format')
+
+                    if not conversion_format:
+                        return jsonify({'error': 'Extensión de destino no especificada'}), 400
+
+                    if not allowed_format(conversion_format):
+                        return jsonify({'error': 'Extensión de destino no permitida'}), 400
+
+                    try:
+                        username = get_jwt()['identity']
+                        user = User.query.filter_by(username=username).first()
+                        user_id = user.id if user else None
+                    except Exception as e:
+                        print(f"Error al obtener usuario del token JWT: {str(e)}")
+                        username = 'default_user'
+                        user_id = None
+
+                    # Crear el directorio de carga si no existe
+                    upload_folder = app.config['UPLOAD_FOLDER']
+                    os.makedirs(upload_folder, exist_ok=True)
+
+                    # Crear una tarea de conversión en la base de datos
+                    conversion_task = FileConversionTask(
+                        user_id=user_id,
+                        original_filename=file.filename,
+                        conversion_format=conversion_format
+                    )
+                    db.session.add(conversion_task)
+                    db.session.commit()
+
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(upload_folder, filename)
+
+                    # Guardar el archivo cargado en el sistema de archivos
+                    file.save(file_path)
+
+                    input_path = file_path
+                    output_path = os.path.join(upload_folder, f'converted_{filename}.{conversion_format}')
+
+                    # Detectar el códec según el formato de destino
+                    if conversion_format == 'mp4':
+                        codec = 'libx264'
+                    elif conversion_format == 'webm':
+                        codec = 'libvpx'
+                    else:
+                        # Agrega lógica para otros formatos si es necesario
+                        codec = 'libx264'
+
+                    video = VideoFileClip(input_path)
+                    video.write_videofile(output_path, codec=codec)
+
+                    # Actualizar el estado de la tarea a "processed"
+                    conversion_task.status = 'processed'
+                    conversion_task.converted_filename = f'converted_{filename}.{conversion_format}'
+                    db.session.commit()
+
+                    # Agregar el ID de la tarea a la lista de tareas del usuario
+                    user_task_list.append(f'Task ID {conversion_task.id}: Convert {filename} to {conversion_format}')
+                    user_tasks[username] = user_task_list
+
+                    # Flash para mostrar un mensaje de éxito
+                    flash('Conversión exitosa', 'success')
+
+                    return redirect(url_for('tasks'))
+
         return render_template('tasks.html', username=username, tasks=user_task_list)
     return 'You are not logged in. <a href="/api/auth/login">Login</a> or <a href="/api/auth/register">Register</a>'
-
-
-
-
 
 @jwt_required()
 @app.route('/tasks/<int:id_task>', methods=['GET','POST'])
