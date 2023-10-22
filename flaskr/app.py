@@ -1,7 +1,10 @@
 from flask import Flask, request, render_template, redirect, url_for, session
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key  = 'your_secret_key'
+
+jwt = JWTManager(app)
 
 users = {
     'user1': 'password1',
@@ -17,7 +20,7 @@ user_tasks = {
 @app.route('/')
 def home():
     if 'username' in session:
-        return f'Hello, {session["username"]}! <a href="/logout">Logout</a>'
+        return f'Hello, {session["username"]}! <br/> You token is {session["token"]} <br/> <a href="/logout">Logout</a>'
     return 'You are not logged in. <a href="/api/auth/login">Login</a>'
 
 @app.route('/api/auth/signup', methods=['GET', 'POST'])
@@ -38,16 +41,25 @@ def login():
         password = request.form['password']
         if username in users and users[username] == password:
             session['username'] = username
+            token_de_acceso = create_access_token(
+                identity = username,
+                expires_delta=False,
+                 additional_claims={"username": username},
+            )
+            session['token'] = token_de_acceso
+            
             return redirect(url_for('home'))
         return 'Invalid username or password'
     return render_template('login.html')
 
 @app.route('/logout')
+@jwt_required()
 def logout():
     session.pop('username', None)
     return redirect(url_for('home'))
 
 @app.route('/tasks', methods=['GET', 'POST'])
+@jwt_required()
 def tasks():
     if 'username' in session:
         username = session['username']
@@ -58,7 +70,7 @@ def tasks():
             if new_task:
                 user_task_list.append(new_task)
                 user_tasks[username] = user_task_list
-            
+
         return render_template('tasks.html', username=username, tasks=user_task_list)
     return 'You are not logged in. <a href="/api/auth/login">Login</a> or <a href="/api/auth/register">Register</a>'
 
