@@ -26,7 +26,7 @@
 </ul>
 
 <!-- Formulario para cargar y convertir archivos -->
-<form method="POST" enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data" onsubmit="startUpload()">
     <label for="file">Select a file to upload:</label>
     <input type="file" name="file" id="file" required accept=".mp4, .webm, .avi, .mpeg, .wmv">
 
@@ -42,14 +42,40 @@
     <button type="submit">Create Task Convert File</button>
 </form>
 
-<br/>
+<div id="progress" style="display: none;">
+    <progress id="progressbar" max="100" value="0"></progress>
+    <span id="progress-label">0%</span>
+</div>
 
 <!-- Agregar un enlace para descargar el archivo convertido -->
-{% if converted_file %}
-<a href="{{ url_for('download_file', task_id=converted_task_id) }}" download>Download Converted File</a>
+{% if converted_file_url %}
+<a href="{{ converted_file_url }}" download>Download Converted File</a>
 {% endif %}
 
 <a href="/logout">Logout</a>
 
+<script>
+    function startUpload() {
+        document.getElementById('progress').style.display = 'block';
+        var form = document.forms[0];
+        var fileInput = form.elements.file;
+        var formData = new FormData(form);
+
+        var progressBar = document.getElementById('progressbar');
+        var progressLabel = document.getElementById('progress-label');
+
+        var interval = setInterval(function () {
+            if (progressBar.value < 100) {
+                progressBar.value += 10;
+                progressLabel.textContent = progressBar.value + '%';
+            } else {
+                clearInterval(interval);
+                progressLabel.textContent = 'Complete';
+            }
+        }, 1000);
+
+        return false;
+    }
+</script>
 </body>
 </html>
