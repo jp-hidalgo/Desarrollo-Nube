@@ -8,10 +8,10 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the current directory contents into the container at /app
-COPY  flaskr /app
+COPY  . /app
 
 # Expose the port that the app will run on (replace with the port your Flask app uses)
 EXPOSE 5000
@@ -21,4 +21,4 @@ EXPOSE 5000
 # ENV FLASK_RUN_HOST=0.0.0.0
 
 # Command to run the application (modify as needed)
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["python", "flaskr/app.py"]

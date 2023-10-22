@@ -7,7 +7,8 @@ app.secret_key  = 'your_secret_key'
 
 jwt = JWTManager(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/site.db'
+
 db = SQLAlchemy(app)
 
 class User(db.Model):
@@ -105,9 +106,6 @@ def tasks():
     return 'You are not logged in. <a href="/api/auth/login">Login</a> or <a href="/api/auth/register">Register</a>'
 
 if __name__ == '__main__':
-    db.create_all()
-    app.run(host='0.0.0.0')
-
-    creo que lo que no esta funionando es la creacion con este bloque: if __name__ == '__main__':
+    with app.app_context():
         db.create_all()
-        app.run(host='0.0.0.0') la linea que creo que no funciona es esta: db.create_all()
+    app.run(host='0.0.0.0')
