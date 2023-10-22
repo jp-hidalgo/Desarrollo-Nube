@@ -1,6 +1,10 @@
 from flask import Flask, request, render_template, redirect, url_for, session
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt
 from flask_sqlalchemy import SQLAlchemy
+import os
+from werkzeug.utils import secure_filename
+from moviepy.editor import VideoFileClip
+from flask import jsonify
 
 app = Flask(__name__)
 app.secret_key  = 'your_secret_key'
@@ -18,15 +22,15 @@ class User(db.Model):
 
 class FileConversionTask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     user = db.relationship('User', backref=db.backref('file_conversion_tasks', lazy=True))
     original_filename = db.Column(db.String(255), nullable=False)
     converted_filename = db.Column(db.String(255))
     conversion_format = db.Column(db.String(20), nullable=False)
     status = db.Column(db.String(20), default='uploaded')
 
-    def __init__(self, user, original_filename, conversion_format):
-        self.user = user
+    def __init__(self, user_id, original_filename, conversion_format):
+        self.user_id = user_id
         self.original_filename = original_filename
         self.conversion_format = conversion_format
 
@@ -88,9 +92,6 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('home'))
 
-
-
-
 @jwt_required()
 @app.route('/tasks', methods=['GET', 'POST'])
 def tasks():
@@ -137,8 +138,75 @@ def delete_task_by_id(id_task):
 
     return f'eliminado {id_task}'
 
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_FORMATS = {'mp4', 'webm', 'avi', 'mpeg', 'wmv'}
 
+def allowed_format(extension):
+    return extension.lower() in ALLOWED_FORMATS
 
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@jwt_required()
+@app.route('/api/convert', methods=['POST'])
+def convert_file():
+    # Verificar si se envió un archivo en la solicitud
+    if 'file' not in request.files:
+        return jsonify({'error': 'No se ha proporcionado ningún archivo'}), 400
+
+    file = request.files['file']
+
+    # Verificar si el archivo tiene un nombre válido
+    if file.filename == '':
+        return jsonify({'error': 'El archivo no tiene nombre'}), 400
+
+    # Obtener la extensión de destino del archivo del formulario
+    conversion_format = request.form.get('conversion_format')
+
+    if not conversion_format:
+        return jsonify({'error': 'Extensión de destino no especificada'}), 400
+
+    if not allowed_format(conversion_format):
+        return jsonify({'error': 'Extensión de destino no permitida'}), 400
+
+    try:
+        username = get_jwt()['identity']
+        user = User.query.filter_by(username=username).first()
+        user_id = user.id if user else None
+    except Exception as e:
+        print(f"Error al obtener usuario del token JWT: {str(e)}")
+        username = 'default_user'
+        user_id = None
+
+    # Crear el directorio de carga si no existe
+    upload_folder = app.config['UPLOAD_FOLDER']
+    os.makedirs(upload_folder, exist_ok=True)
+
+    # Crear una tarea de conversión en la base de datos
+    conversion_task = FileConversionTask(user_id=user_id, original_filename=file.filename, conversion_format=conversion_format)
+    db.session.add(conversion_task)
+    db.session.commit()
+
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(upload_folder, filename)
+
+    # Guardar el archivo cargado en el sistema de archivos
+    file.save(file_path)
+
+    input_path = file_path
+    output_path = os.path.join(upload_folder, f'converted_{filename}.{conversion_format}')
+
+    video = VideoFileClip(input_path)
+    video.write_videofile(output_path, codec='libx264')
+
+    # Actualizar el estado de la tarea a "processed"
+    conversion_task.status = 'processed'
+    conversion_task.converted_filename = f'converted_{filename}.{conversion_format}'
+    db.session.commit()
+
+    return jsonify({'message': 'Conversión exitosa', 'task_id': conversion_task.id}), 200
 
 
 if __name__ == '__main__':
