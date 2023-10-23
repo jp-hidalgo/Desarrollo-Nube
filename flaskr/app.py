@@ -156,21 +156,21 @@ def tasks():
                     user_task_list.append(f'Task: Convert {filename} to {conversion_format}')
                     user_tasks[username] = user_task_list
 
-                    taskFile = FileConversionTask(
+                    """taskFile = FileConversionTask(
                         user_id=session['id_user'],
                         original_filename=filename,
                         converted_filename=f'Task: Convert {filename} to {conversion_format}',
                         conversion_format=conversion_format,
                         status="Conv exitosa")
                     db.session.add(taskFile)
-                    db.session.commit()
+                    db.session.commit()"""
 
                     # Cambio: crea la URL para el archivo convertido usando la función url_for
                     converted_file_url = url_for('download_file', filename=output_filename)
                     flash('Conversión exitosa', 'success')
 
-        return render_template('tasks.html', id_user=session["id_user"], username=username, tasks=user_task_list, converted_file_url=converted_file_url)
-
+        #return render_template('tasks.html', id_user=session["id_user"], username=username, tasks=user_task_list, converted_file_url=converted_file_url)
+        return render_template('tasks.html', username=username, tasks=user_task_list, converted_file_url=converted_file_url)
     return 'You are not logged in. <a href="/api/auth/login">Login</a> or <a href="/api/auth/register">Register</a>'
 
 @app.route('/download/<filename>')
