@@ -15,6 +15,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/site.db'
 
 db = SQLAlchemy(app)
 
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -29,10 +30,7 @@ class FileConversionTask(db.Model):
     conversion_format = db.Column(db.String(20), nullable=False)
     status = db.Column(db.String(20), default='uploaded')
 
-    def __init__(self, user_id, original_filename, conversion_format):
-        self.user_id = user_id
-        self.original_filename = original_filename
-        self.conversion_format = conversion_format
+
 
 users = {
     'user1': 'password1',
@@ -55,7 +53,7 @@ def create_user():
 @app.route('/')
 def home():
     if 'username' in session:
-        return f'Hello, {session["username"]}! <br/> You token is {session["token"]} <br/>  <a href="/tasks">Tasks</a> <br/>  <a href="/logout">Logout</a>'
+        return f'Hello, {session["username"]}! -->  <br/> You token is {session["token"]} <br/>  <a href="/tasks">Tasks</a> <br/>  <a href="/logout">Logout</a>'
     return 'You are not logged in. <a href="/api/auth/login">Login</a>'
 
 @app.route('/api/auth/signup', methods=['GET', 'POST'])
@@ -66,15 +64,31 @@ def register():
         if username in users:
             return 'Username already exists. Please choose a different username.'
         users[username] = password
+        user = User(username=username, password=password)
+        db.session.add(user)
+        db.session.commit()
+        
+        
         return 'Registration successful. <a href="/api/auth/login">Login</a>'
     return render_template('register.html')
 
 @app.route('/api/auth/login', methods=['GET', 'POST'])
 def login():
+    
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         if username in users and users[username] == password:
+            
+            chef = User.query.filter(
+                User.username == username,
+                User.password == password,
+            ).first()
+            
+           
+            session['id_user'] = chef.id
+            
             session['username'] = username
             token_de_acceso = create_access_token(
                 identity = username,
@@ -136,8 +150,17 @@ def tasks():
                     # Agregar el ID de la tarea a la lista de tareas del usuario
                     user_task_list.append(f'Task: Convert {filename} to {conversion_format}')
                     user_tasks[username] = user_task_list
+                    
+                    taskFile = FileConversionTask(
+                        user_id=session['id_user'],
+                        original_filename=filename,
+                        converted_filename=f'Task: Convert {filename} to {conversion_format}',
+                        conversion_format=conversion_format,
+                        status="Conv exitosa")
+                    db.session.add(taskFile)
+                    db.session.commit()
 
-        return render_template('tasks.html', username=username, tasks=user_task_list, converted_file_url=converted_file_url)
+        return render_template('tasks.html', id_user=session["id_user"], username=username, tasks=user_task_list, converted_file_url=converted_file_url)
     return 'You are not logged in. <a href="/api/auth/login">Login</a> or <a href="/api/auth/register">Register</a>'
 
 @app.route('/download/<filename>')
