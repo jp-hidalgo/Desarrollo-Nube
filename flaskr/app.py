@@ -169,7 +169,7 @@ def tasks():
                     converted_file_url = url_for('download_file', filename=output_filename)
                     flash('Conversión exitosa', 'success')
 
-        return render_template('tasks.html', username=username, tasks=user_task_list, converted_file_url=converted_file_url)
+        return render_template('tasks.html', id_user=session["id_user"], username=username, tasks=user_task_list, converted_file_url=converted_file_url)
 
     return 'You are not logged in. <a href="/api/auth/login">Login</a> or <a href="/api/auth/register">Register</a>'
 
