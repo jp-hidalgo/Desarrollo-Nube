@@ -154,7 +154,7 @@ def tasks():
                     taskFile = FileConversionTask(
                         user_id=session['id_user'],
                         original_filename=filename,
-                        converted_filename=f'Task: Convert {filename} to {conversion_format}',
+                        converted_filename=output_path,
                         conversion_format=conversion_format,
                         status="Conv exitosa")
                     db.session.add(taskFile)
