@@ -110,6 +110,7 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('home'))
 
+@jwt_required()
 @app.route('/tasks', methods=['GET', 'POST'])
 def tasks():
     if 'username' in session:
