@@ -14,4 +14,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 # CMD ["celery", "-A", "tasks", "worker", "--loglevel=info"]
 EXPOSE 5001
 
-CMD [ "flask", "run", "--host=0.0.0.0", "--port=5001"]
+CMD ["python", "app.py"]
