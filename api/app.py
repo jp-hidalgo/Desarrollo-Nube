@@ -1,9 +1,6 @@
-from api.views.tasks import UPLOAD_FOLDER
-
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
-
 
 app = Flask(__name__)
 app.secret_key  = 'your_secret_key'

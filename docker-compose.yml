@@ -23,7 +23,21 @@ services:
       context: ./api
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
-  
+      - "5001:5001"
+    volumes:
+      - .:/api
+
+  worker:
+    build:
+      context: ./broker
+      dockerfile: Dockerfile
+    command: celery -A tasks worker -l info -E
+    environment:
+      CELERY_BROKER_URL: redis://redis
+      CELERY_RESULT_BACKEND: redis://redis
+    depends_on:
+      - redis
+    volumes: ['./broker:/broker']
+
 volumes:
   pgdata:

@@ -12,6 +12,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Run the Celery worker when the container launches
 # CMD ["celery", "-A", "tasks", "worker", "--loglevel=info"]
-EXPOSE 5001
-
-CMD [ "flask", "run", "--host=0.0.0.0", "--port=5001"]
+CMD watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A tasks worker --concurrency=1 --loglevel=INFO -E
